@@ -1,0 +1,38 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      # NOTE: capability plugins build for wasm32-unknown-unknown (NOT wasip1).
+      # The wasip1 target pulls WASI imports that core's capability-plugin
+      # linker does not provide, so wasip1 modules fail to instantiate.
+      # (Parsers are the exception: they load in the WASI-enabled parser
+      # linker and must use wasm32-wasip1 + wasi-sdk.)
+      - name: Build
+        run: cargo build --release --target wasm32-unknown-unknown
+
+      - name: Rename artifact
+        run: |
+          WASM=$(ls target/wasm32-unknown-unknown/release/*.wasm | head -1)
+          cp "$WASM" dotnet_api_index.wasm
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dotnet_api_index.wasm
