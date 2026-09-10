@@ -91,10 +91,37 @@ fn api_index(root: &str) -> Vec<u8> {
     } else if is_project_path(root) {
         build_project_index(root)
     } else {
-        None
+        // Core passes the workspace root directory: discover the manifest.
+        // Prefer a solution, fall back to the first project file found.
+        discover_manifest(root).and_then(|m| {
+            if is_solution_path(&m) {
+                build_solution_index(&m)
+            } else {
+                build_project_index(&m)
+            }
+        })
     };
 
     doc.and_then(|doc| serde_json::to_vec(&doc).ok()).unwrap_or_default()
+}
+
+/// Find the best build manifest under a workspace root directory.
+/// Returns the host path (root joined with the relative entry).
+fn discover_manifest(root: &str) -> Option<String> {
+    let mut best_sln: Option<String> = None;
+    let mut best_proj: Option<String> = None;
+    for rel in list_host_files(root) {
+        let norm = normalize_rel_path(&rel);
+        if best_sln.is_none() && is_solution_path(&norm) {
+            best_sln = Some(join_path(root, &norm));
+        } else if best_proj.is_none() && is_project_path(&norm) {
+            best_proj = Some(join_path(root, &norm));
+        }
+        if best_sln.is_some() && best_proj.is_some() {
+            break;
+        }
+    }
+    best_sln.or(best_proj)
 }
 
 fn build_solution_index(solution_path: &str) -> Option<ApiIndexDoc> {
