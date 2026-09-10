@@ -16,7 +16,7 @@ basalt_plugin_meta! {
     hook_flags:        CAP_API_INDEX,
     provides:          "api-index:dotnet",
     requires:          "project-model:dotnet",
-    optional_requires: "semantic-query:dotnet",
+    optional_requires: "",
     file_globs:        "",
     activates_on:      "",
     activation_events: "",
