@@ -12,7 +12,16 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout plugin
+        uses: actions/checkout@v4
+        with:
+          path: plugin
+
+      - name: Checkout SDK
+        uses: actions/checkout@v4
+        with:
+          repository: adevcorn/basalt-plugin-sdk
+          path: basalt-plugin-sdk
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -25,9 +34,11 @@ jobs:
       # (Parsers are the exception: they load in the WASI-enabled parser
       # linker and must use wasm32-wasip1 + wasi-sdk.)
       - name: Build
+        working-directory: plugin
         run: cargo build --release --target wasm32-unknown-unknown
 
       - name: Rename artifact
+        working-directory: plugin
         run: |
           WASM=$(ls target/wasm32-unknown-unknown/release/*.wasm | head -1)
           cp "$WASM" dotnet_api_index.wasm
@@ -35,4 +46,4 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: dotnet_api_index.wasm
+          files: plugin/dotnet_api_index.wasm
