@@ -1,2 +1,4 @@
 /target
 .DS_Store
+.basalt/
+.basalt_shadow_meta.json
